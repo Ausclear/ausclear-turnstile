@@ -5,40 +5,28 @@ Shared Cloudflare Turnstile verification endpoint for all AusClear contact forms
 ## Endpoint
 
 ```
-POST https://turnstile.ausclear.au/api/verify
+POST https://ausclear-turnstile.vercel.app/api/verify
 ```
 
 ## Request
 
 ```json
-{
-  "token": "<turnstile-token-from-widget>"
-}
+{ "token": "<turnstile-token-from-widget>" }
 ```
 
 ## Response (success)
 
 ```json
-{
-  "success": true,
-  "hostname": "ausclear.com.au",
-  "action": "enquiry"
-}
+{ "success": true, "hostname": "ausclear.com.au", "action": "enquiry" }
 ```
 
 ## Response (failure)
 
 ```json
-{
-  "success": false,
-  "message": "Verification failed",
-  "codes": ["invalid-input-response"]
-}
+{ "success": false, "message": "Verification failed", "codes": ["invalid-input-response"] }
 ```
 
 ## Client-side integration
-
-Every form that uses Turnstile follows this pattern:
 
 ```html
 <!-- 1. Load Turnstile script in <head> -->
@@ -54,46 +42,38 @@ Every form that uses Turnstile follows this pattern:
 
 ```javascript
 let turnstileToken = null;
-
-function onTurnstileSuccess(token) {
-  turnstileToken = token;
-}
+function onTurnstileSuccess(token) { turnstileToken = token; }
 
 async function handleSubmit() {
-  // Verify the token server-side before letting the form submit to Zoho
-  const r = await fetch('https://turnstile.ausclear.au/api/verify', {
+  const r = await fetch('https://ausclear-turnstile.vercel.app/api/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: turnstileToken })
   });
   const result = await r.json();
-
   if (!result.success) {
     alert('Security check failed. Please try again.');
     if (window.turnstile) turnstile.reset();
     return;
   }
-
-  // Token verified — proceed with form submission
   form.submit();
 }
 ```
 
 ## Keys
 
-- **Site key** (public, used in HTML): `0x4AAAAAADRAwtnbl8MHBAU2`
-- **Secret key** (server-only, embedded in `/api/verify.js`): kept internal
+- **Site key** (public): `0x4AAAAAADRAwtnbl8MHBAU2`
+- **Secret key** (server-only): embedded in `/api/verify.js`
 
 ## Hostnames
 
-Turnstile widget is configured to accept tokens from:
+Turnstile widget accepts tokens from:
 
 - ausclear.com.au
 - www.ausclear.com.au
 - support.ausclear.au
 - www.support.ausclear.au
-- portal.ausclear.au
 
 ## Deployment
 
-Auto-deployed to Vercel on every push to `main`. Custom domain: `turnstile.ausclear.au`.
+Auto-deployed to Vercel on every push to `main`.
