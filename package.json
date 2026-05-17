@@ -1,0 +1,7 @@
+{
+  "name": "ausclear-turnstile",
+  "version": "1.0.0",
+  "description": "Shared Cloudflare Turnstile verification endpoint for AusClear contact forms",
+  "private": true,
+  "engines": { "node": ">=18.x" }
+}
