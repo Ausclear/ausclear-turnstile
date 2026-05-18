@@ -130,17 +130,17 @@ export default async function handler(req, res) {
   }
 }
 
-// Called after lead creation — fire and forget, don't block response
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyYXhka3ptdGVvZ2tiZmF0dmlyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzU5OTkyMSwiZXhwIjoyMDc5MTc1OTIxfQ.0HUnGAWyU0donigxUOoJSpeQNJMUP2HzaR3cID6yBFs';
+const FN_BASE = 'https://qraxdkzmteogkbfatvir.functions.supabase.co';
+
 async function triggerLeadEmails(fields, leadId) {
+  const payload = JSON.stringify({ ...fields, leadId });
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` };
   try {
-    await fetch('https://qraxdkzmteogkbfatvir.functions.supabase.co/send-lead-emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyYXhka3ptdGVvZ2tiZmF0dmlyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzU5OTkyMSwiZXhwIjoyMDc5MTc1OTIxfQ.0HUnGAWyU0donigxUOoJSpeQNJMUP2HzaR3cID6yBFs',
-      },
-      body: JSON.stringify({ ...fields, leadId }),
-    });
+    await Promise.all([
+      fetch(`${FN_BASE}/send-lead-applicant`, { method: 'POST', headers, body: payload }),
+      fetch(`${FN_BASE}/send-lead-staff`, { method: 'POST', headers, body: payload }),
+    ]);
   } catch (err) {
     console.error('Email trigger error:', err.message);
   }
