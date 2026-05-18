@@ -49,6 +49,7 @@ async function createZohoLead(accessToken, fields) {
         Email: fields.email,
         Mobile: fields.mobile || '',
         Description: fields.message || '',
+        Enquiry_Type: fields.enquiryType || '',
         Lead_Source: fields.leadSource || 'Web Site',
         State: fields.state || '',
         Clearance_Type: fields.clearanceType || '',
