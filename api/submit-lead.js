@@ -51,7 +51,7 @@ async function createZohoLead(accessToken, fields) {
         Description: fields.message || '',
         Lead_Source: fields.leadSource || 'Web Site',
         State: fields.state || '',
-        LEADCF5: fields.clearanceType || '',
+        Clearance_Type: fields.clearanceType || '',
         Tag: [{ name: 'WebForm' }],
       },
     ],
