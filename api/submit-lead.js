@@ -17,6 +17,7 @@ const ALLOWED_ORIGINS = [
   'https://support.ausclear.au',
   'https://www.support.ausclear.au',
   'https://portal.ausclear.au',
+  'null', // local file:// testing — remove before go-live
 ];
 
 // Simple field validation
@@ -87,7 +88,7 @@ export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
 
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Vary', 'Origin');
