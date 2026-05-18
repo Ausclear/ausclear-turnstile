@@ -122,9 +122,26 @@ export default async function handler(req, res) {
   try {
     const accessToken = await getZohoAccessToken();
     const leadId = await createZohoLead(accessToken, body);
+    triggerLeadEmails(body, leadId);
     return res.status(200).json({ success: true, leadId });
   } catch (err) {
     console.error('Zoho error:', err.message);
     return res.status(502).json({ success: false, message: 'Failed to create lead. Please try again.' });
+  }
+}
+
+// Called after lead creation — fire and forget, don't block response
+async function triggerLeadEmails(fields, leadId) {
+  try {
+    await fetch('https://qraxdkzmteogkbfatvir.functions.supabase.co/send-lead-emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyYXhka3ptdGVvZ2tiZmF0dmlyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzU5OTkyMSwiZXhwIjoyMDc5MTc1OTIxfQ.0HUnGAWyU0donigxUOoJSpeQNJMUP2HzaR3cID6yBFs',
+      },
+      body: JSON.stringify({ ...fields, leadId }),
+    });
+  } catch (err) {
+    console.error('Email trigger error:', err.message);
   }
 }
