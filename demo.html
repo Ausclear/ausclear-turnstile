@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AusClear — Submit Lead Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #c9a84c;
+    --bg: #f7f5f0;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+    --border: #e0dbd0;
+    --error: #c0392b;
+    --success: #1e7e4a;
+  }
+  body { font-family: 'Raleway', sans-serif; background: var(--bg); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+  .container { background: var(--card); border: 1px solid var(--border); border-top: 4px solid var(--gold); max-width: 560px; width: 100%; padding: 48px 48px 40px; box-shadow: 0 4px 40px rgba(0,0,0,0.08); }
+  .badge { display: inline-block; background: #f0ebe0; color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; margin-bottom: 16px; }
+  h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 36px; }
+  .field { margin-bottom: 20px; }
+  label.field-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); margin-bottom: 8px; }
+  label.field-label .req { color: var(--gold); margin-left: 2px; }
+  input[type="text"], input[type="email"], input[type="tel"], select, textarea {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--border); background: #fafaf7;
+    font-family: 'Raleway', sans-serif; font-size: 14px; color: var(--text); outline: none;
+    transition: border-color 0.2s; appearance: none; -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); background: #fff; }
+  textarea { resize: vertical; min-height: 90px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .validation-msg { font-size: 11px; margin-top: 5px; display: none; }
+  .validation-msg.error { color: var(--error); display: block; }
+  .validation-msg.ok { color: var(--success); display: block; }
+
+  /* Radio groups */
+  .radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+  .radio-option { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: var(--text); font-weight: 500; }
+  .radio-option input[type="radio"] { width: auto; padding: 0; accent-color: var(--gold); cursor: pointer; }
+
+  /* Clearance radios — hidden by default */
+  #clearanceGroup { display: none; margin-top: 16px; }
+
+  .cf-turnstile { margin: 8px 0 24px; }
+  button[type="submit"] { width: 100%; padding: 14px; background: var(--gold); color: #fff; font-family: 'Raleway', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.2s; }
+  button[type="submit"]:hover { background: #b8902e; }
+  button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status-box { margin-top: 20px; padding: 14px 16px; font-size: 13px; font-weight: 500; display: none; border-left: 3px solid; }
+  .status-box.success { border-color: var(--success); color: var(--success); background: #f0faf4; display: block; }
+  .status-box.error { border-color: var(--error); color: var(--error); background: #fdf0ef; display: block; }
+  .debug-box { margin-top: 20px; background: #1a1a1a; color: #c9a84c; font-family: monospace; font-size: 11px; padding: 16px; white-space: pre-wrap; word-break: break-all; display: none; max-height: 300px; overflow-y: auto; }
+  .debug-box.show { display: block; }
+  .debug-toggle { margin-top: 12px; font-size: 11px; color: var(--muted); cursor: pointer; text-decoration: underline; text-align: center; display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="badge">Test Environment</div>
+  <h1>Submit Lead Demo</h1>
+  <p class="subtitle">Tests the <code>submit-lead</code> endpoint — matches the live AusClear contact form exactly.</p>
+
+  <form id="leadForm" novalidate>
+
+    <div class="row">
+      <div class="field">
+        <label class="field-label">First Name</label>
+        <input type="text" id="firstName" placeholder="e.g. Jane">
+      </div>
+      <div class="field">
+        <label class="field-label">Last Name <span class="req">*</span></label>
+        <input type="text" id="lastName" placeholder="e.g. Smith">
+        <div class="validation-msg" id="lastNameMsg"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Email Address <span class="req">*</span></label>
+      <input type="email" id="email" placeholder="e.g. jane.smith@example.com">
+      <div class="validation-msg" id="emailMsg"></div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Mobile</label>
+      <input type="tel" id="mobile" placeholder="04XX XXX XXX">
+      <div class="validation-msg" id="mobileMsg"></div>
+    </div>
+
+    <!-- Enquiry Type — matches webform exactly -->
+    <div class="field">
+      <label class="field-label">Enquiry Type <span class="req">*</span></label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="enquiry_type" value="General" id="generalEnquiry" checked>
+          General Enquiry
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="enquiry_type" value="Security Clearance" id="securityEnquiry">
+          Security Clearance
+        </label>
+      </div>
+    </div>
+
+    <!-- Clearance Type — shown only when Security Clearance selected -->
+    <div class="field" id="clearanceGroup">
+      <label class="field-label">Clearance Type</label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="LEADCF5" value="Baseline Security Clearance" id="baselineClearance">
+          Baseline Security Clearance
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="LEADCF5" value="NV1 Security Clearance" id="nv1Clearance">
+          NV1 Security Clearance
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="LEADCF5" value="NV2 Security Clearance" id="nv2Clearance">
+          NV2 Security Clearance
+        </label>
+      </div>
+    </div>
+
+    <!-- State — matches webform exactly -->
+    <div class="field">
+      <label class="field-label">State / Territory</label>
+      <select id="state" name="State">
+        <option value="">-- Select --</option>
+        <option value="Australian Capital Territory">Australian Capital Territory</option>
+        <option value="New South Wales">New South Wales</option>
+        <option value="Northern Territory">Northern Territory</option>
+        <option value="Queensland">Queensland</option>
+        <option value="South Australia">South Australia</option>
+        <option value="Tasmania">Tasmania</option>
+        <option value="Victoria">Victoria</option>
+        <option value="Western Australia">Western Australia</option>
+      </select>
+    </div>
+
+    <!-- Lead Source — matches webform exactly -->
+    <div class="field">
+      <label class="field-label">Referral Source</label>
+      <select id="leadSource" name="Lead Source">
+        <option value="-None-">-None-</option>
+        <option value="Advertisement">Advertisement</option>
+        <option value="Chat">Chat</option>
+        <option value="Cold Call">Cold Call</option>
+        <option value="Employee Referral">Employee Referral</option>
+        <option value="External Referral">External Referral</option>
+        <option value="Facebook">Facebook</option>
+        <option value="Friend Referral">Friend Referral</option>
+        <option value="Google+">Google+</option>
+        <option value="LinkedIn">LinkedIn</option>
+        <option value="Partner">Partner</option>
+        <option value="Sales Email Alias">Sales Email Alias</option>
+        <option value="Seminar Internal">Seminar Internal</option>
+        <option value="Trade Show">Trade Show</option>
+        <option value="Twitter">Twitter</option>
+        <option value="Web Research">Web Research</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Message</label>
+      <textarea id="message" placeholder="Your enquiry..."></textarea>
+    </div>
+
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAADRAwoqpMLoXiNM5CM20t6pJkAU" data-theme="light"></div>
+
+    <button type="submit" id="submitBtn">Submit Lead</button>
+  </form>
+
+  <div class="status-box" id="statusBox"></div>
+  <span class="debug-toggle" id="debugToggle">Show debug response ▾</span>
+  <div class="debug-box" id="debugBox"></div>
+</div>
+
+<script>
+const ENDPOINT = 'https://ausclear-turnstile.vercel.app/api/submit-lead';
+
+// Toggle clearance type visibility
+document.getElementById('generalEnquiry').addEventListener('change', function() {
+  document.getElementById('clearanceGroup').style.display = 'none';
+});
+document.getElementById('securityEnquiry').addEventListener('change', function() {
+  document.getElementById('clearanceGroup').style.display = 'block';
+});
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'validation-msg' + (msg ? ' ' + type : '');
+}
+
+document.getElementById('lastName').addEventListener('blur', function() {
+  showMsg('lastNameMsg', this.value.trim().length < 2 ? 'Last name is required' : '', 'error');
+});
+document.getElementById('email').addEventListener('blur', function() {
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value);
+  showMsg('emailMsg', this.value && !ok ? 'Enter a valid email address' : '', 'error');
+});
+document.getElementById('mobile').addEventListener('blur', function() {
+  const clean = this.value.replace(/\D/g, '');
+  if (!clean.length) return showMsg('mobileMsg', '', '');
+  if (clean.length !== 10 || !clean.startsWith('04')) showMsg('mobileMsg', 'Must be 10 digits starting with 04', 'error');
+  else showMsg('mobileMsg', '✓ Valid', 'ok');
+});
+
+document.getElementById('leadForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const lastName = document.getElementById('lastName').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const mobile = document.getElementById('mobile').value.trim();
+
+  if (lastName.length < 2) { showMsg('lastNameMsg', 'Last name is required', 'error'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('emailMsg', 'Enter a valid email address', 'error'); return; }
+  const cleanMobile = mobile.replace(/\D/g, '');
+  if (cleanMobile.length > 0 && (cleanMobile.length !== 10 || !cleanMobile.startsWith('04'))) {
+    showMsg('mobileMsg', 'Must be 10 digits starting with 04', 'error'); return;
+  }
+
+  const enquiryType = document.querySelector('input[name="enquiry_type"]:checked')?.value || 'General';
+  const clearanceRadio = document.querySelector('input[name="LEADCF5"]:checked');
+  const clearanceType = clearanceRadio ? clearanceRadio.value : '';
+
+  if (enquiryType === 'Security Clearance' && !clearanceType) {
+    alert('Please select a clearance type'); return;
+  }
+
+  const tokenEl = document.querySelector('[name="cf-turnstile-response"]');
+  const turnstileToken = tokenEl ? tokenEl.value : '';
+
+  const payload = {
+    firstName: document.getElementById('firstName').value.trim(),
+    lastName,
+    email,
+    mobile: cleanMobile.length === 10 ? cleanMobile : '',
+    enquiryType,
+    clearanceType,
+    state: document.getElementById('state').value,
+    message: document.getElementById('message').value.trim(),
+    leadSource: document.getElementById('leadSource').value,
+    turnstileToken,
+  };
+
+  const btn = document.getElementById('submitBtn');
+  const statusBox = document.getElementById('statusBox');
+  statusBox.className = 'status-box';
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    const debugBox = document.getElementById('debugBox');
+    const debugToggle = document.getElementById('debugToggle');
+    debugBox.textContent = JSON.stringify({ status: res.status, body: data, payload }, null, 2);
+    debugToggle.style.display = 'block';
+    debugToggle.onclick = () => {
+      debugBox.classList.toggle('show');
+      debugToggle.textContent = debugBox.classList.contains('show') ? 'Hide debug response ▴' : 'Show debug response ▾';
+    };
+
+    if (data.success) {
+      statusBox.className = 'status-box success';
+      statusBox.textContent = '✓ Lead created. Zoho Lead ID: ' + data.leadId;
+    } else {
+      statusBox.className = 'status-box error';
+      statusBox.textContent = '✗ ' + (data.message || 'Unknown error');
+    }
+  } catch (err) {
+    statusBox.className = 'status-box error';
+    statusBox.textContent = '✗ Network error: ' + err.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Submit Lead';
+});
+</script>
+</body>
+</html>
