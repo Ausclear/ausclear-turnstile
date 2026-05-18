@@ -11,18 +11,11 @@ const ZOHO_REFRESH_TOKEN = '1000.cc0c290f4c0aebf03439116960721d2f.ba8c1468f101c3
 const ZOHO_TOKEN_URL = 'https://accounts.zoho.com.au/oauth/v2/token';
 const ZOHO_LEADS_URL = 'https://www.zohoapis.com.au/crm/v2/Leads';
 
-const ALLOWED_ORIGINS = [
-  'https://ausclear.com.au',
-  'https://www.ausclear.com.au',
-  'https://support.ausclear.au',
-  'https://www.support.ausclear.au',
-  'https://portal.ausclear.au',
-  'null', // local file:// testing — remove before go-live
-];
+// Test bypass secret header — remove before go-live
+const TEST_BYPASS_SECRET = 'ausclear-test-2026';
 
-// Simple field validation
 function validateFields(body) {
-  const { firstName, lastName, email, mobile, message } = body;
+  const { lastName, email, mobile } = body;
   if (!lastName || lastName.trim().length < 2) return 'Last name is required';
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Valid email is required';
   if (mobile) {
@@ -41,7 +34,6 @@ async function getZohoAccessToken() {
     client_secret: ZOHO_CLIENT_SECRET,
     refresh_token: ZOHO_REFRESH_TOKEN,
   });
-
   const res = await fetch(`${ZOHO_TOKEN_URL}?${params.toString()}`, { method: 'POST' });
   const data = await res.json();
   if (!data.access_token) throw new Error('Failed to obtain Zoho access token');
@@ -59,9 +51,7 @@ async function createZohoLead(accessToken, fields) {
         Description: fields.message || '',
         Lead_Source: fields.leadSource || 'Web Site',
         State: fields.state || '',
-        // Custom field: Clearance Type (LEADCF5 maps to this in your Zoho setup)
         LEADCF5: fields.clearanceType || '',
-        // formName tag so you can identify source
         Tag: [{ name: 'WebForm' }],
       },
     ],
@@ -85,41 +75,40 @@ async function createZohoLead(accessToken, fields) {
 }
 
 export default async function handler(req, res) {
-  const origin = req.headers.origin || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Test-Bypass');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method not allowed' });
 
   const body = req.body || {};
   const { turnstileToken } = body;
+  const testBypass = req.headers['x-test-bypass'] === TEST_BYPASS_SECRET;
 
-  // 1. Verify Turnstile token
-  if (!turnstileToken) {
-    return res.status(400).json({ success: false, message: 'Missing Turnstile token' });
-  }
-
-  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || undefined;
-  const cfParams = new URLSearchParams({ secret: TURNSTILE_SECRET, response: turnstileToken });
-  if (ip) cfParams.append('remoteip', ip);
-
-  try {
-    const cfRes = await fetch(CLOUDFLARE_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: cfParams.toString(),
-    });
-    const cfData = await cfRes.json();
-    if (!cfData.success) {
-      return res.status(400).json({ success: false, message: 'Turnstile verification failed' });
+  // 1. Verify Turnstile (skip if test bypass header present)
+  if (!testBypass) {
+    if (!turnstileToken) {
+      return res.status(400).json({ success: false, message: 'Missing Turnstile token' });
     }
-  } catch {
-    // Fail open — if Cloudflare is unreachable, allow through
+
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || undefined;
+    const cfParams = new URLSearchParams({ secret: TURNSTILE_SECRET, response: turnstileToken });
+    if (ip) cfParams.append('remoteip', ip);
+
+    try {
+      const cfRes = await fetch(CLOUDFLARE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: cfParams.toString(),
+      });
+      const cfData = await cfRes.json();
+      if (!cfData.success) {
+        return res.status(400).json({ success: false, message: 'Turnstile verification failed' });
+      }
+    } catch {
+      // Fail open if Cloudflare unreachable
+    }
   }
 
   // 2. Validate fields
@@ -128,7 +117,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: validationError });
   }
 
-  // 3. Get Zoho token and create lead
+  // 3. Create Zoho lead
   try {
     const accessToken = await getZohoAccessToken();
     const leadId = await createZohoLead(accessToken, body);
