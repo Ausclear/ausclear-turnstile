@@ -122,7 +122,7 @@ export default async function handler(req, res) {
   try {
     const accessToken = await getZohoAccessToken();
     const leadId = await createZohoLead(accessToken, body);
-    triggerLeadEmails(body, leadId);
+    await triggerLeadEmails(body, leadId);
     return res.status(200).json({ success: true, leadId });
   } catch (err) {
     console.error('Zoho error:', err.message);
