@@ -20,8 +20,9 @@ function validateFields(body) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Valid email is required';
   if (mobile) {
     const clean = mobile.replace(/\D/g, '');
-    if (clean.length > 0 && (clean.length !== 10 || !clean.startsWith('04'))) {
-      return 'Mobile must be a 10-digit Australian number starting with 04';
+    // Accept Australian mobile (04) or landline (02/03/07/08), 10 digits total
+    if (clean.length > 0 && !/^(04\d{8}|0[2378]\d{8})$/.test(clean)) {
+      return 'Must be an Australian mobile or landline number';
     }
   }
   return null;
